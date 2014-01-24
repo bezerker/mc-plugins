@@ -10,9 +10,20 @@ class MCollective::Application::Virt<MCollective::Application
     usage "Usage: mco virt define <domain> <local or remote xml file> [permanent]"
     usage "Usage: mco virt undefine <domain> [destroy]"
 
+    option :connect,
+        :description => "hypervisor connection URI",
+        :arguments   => ["--connect"],
+        :type        => :string,
+        :optional    => true
+
     def post_option_parser(configuration)
         configuration[:command] = ARGV.shift if ARGV.size > 0
         configuration[:domain] = ARGV.shift if ARGV.size > 0
+
+        if configuration[:domain] =~ /^\w+:\/\/[\S]+$/
+            configuration[:connect] = configuration.delete(:domain)
+        end
+        puts configuration.inspect
     end
 
     def validate_configuration(configuration)
@@ -23,10 +34,16 @@ class MCollective::Application::Virt<MCollective::Application
         end
     end
 
+    def base_args
+       base = Hash.new
+       base[:libvirt_url] = configuration[:connect] if configuration[:connect] =~ /^\w:\/\/[\S]+$/
+       base
+    end
+
     def undefine_command
         configuration[:destroy] = ARGV.shift if ARGV.size > 0
 
-        args = {:domain => configuration[:domain]}
+        args = base_args.merge({:domain => configuration[:domain]})
         args[:destroy] = true if configuration[:destroy] =~ /^dest/
 
         printrpc virtclient.undefinedomain(args)
@@ -38,7 +55,7 @@ class MCollective::Application::Virt<MCollective::Application
 
         raise "Need a XML file to define an instance" unless configuration[:xmlfile]
 
-        args = {}
+        args = base_args
         if File.exist?(configuration[:xmlfile])
             args[:xml] = File.read(configuration[:xmlfile])
         else
@@ -53,18 +70,18 @@ class MCollective::Application::Virt<MCollective::Application
 
     def info_command
         if configuration[:domain]
-            printrpc virtclient.domaininfo(:domain => configuration[:domain])
+            printrpc virtclient.domaininfo(base_args.merge(:domain => configuration[:domain]))
         else
-            printrpc virtclient.hvinfo
+            printrpc virtclient.hvinfo(base_args)
         end
     end
 
     def xml_command
-        printrpc virtclient.domainxml(:domain => configuration[:domain])
+        printrpc virtclient.domainxml(base_args.merge(:domain => configuration[:domain]))
     end
 
     def domains_command
-        virtclient.hvinfo.each do |r|
+        virtclient.hvinfo(base_args).each do |r|
             if r[:statuscode] == 0
                 domains = r[:data][:active_domains] << r[:data][:inactive_domains]
 
@@ -78,33 +95,33 @@ class MCollective::Application::Virt<MCollective::Application
     end
 
     def reboot_command
-        printrpc virtclient.reboot(:domain => configuration[:domain])
+        printrpc virtclient.reboot(base_args.merge(:domain => configuration[:domain]))
     end
 
     def start_command
-        printrpc virtclient.create(:domain => configuration[:domain])
+        printrpc virtclient.create(base_args.merge(:domain => configuration[:domain]))
     end
 
     def stop_command
-        printrpc virtclient.shutdown(:domain => configuration[:domain])
+        printrpc virtclient.shutdown(base_args.merge(:domain => configuration[:domain]))
     end
 
     def suspend_command
-        printrpc virtclient.suspend(:domain => configuration[:domain])
+        printrpc virtclient.suspend(base_args.merge(:domain => configuration[:domain]))
     end
 
     def resume_command
-        printrpc virtclient.resume(:domain => configuration[:domain])
+        printrpc virtclient.resume(base_args.merge(:domain => configuration[:domain]))
     end
 
     def destroy_command
-        printrpc virtclient.destroy(:domain => configuration[:domain])
+        printrpc virtclient.destroy(base_args.merge(:domain => configuration[:domain]))
     end
 
     def find_command
         pattern = Regexp.new(configuration[:domain])
 
-        virtclient.hvinfo.each do |r|
+        virtclient.hvinfo(base_args).each do |r|
             if r[:statuscode] == 0
                 domains = r[:data][:active_domains] << r[:data][:inactive_domains]
                 matched = domains.flatten.grep pattern

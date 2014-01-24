@@ -181,7 +181,7 @@ module MCollective
 
             private
             def connect
-                url = @config.pluginconf["libvirt.url"] || "qemu:///system"
+                url = request['libvirt_url'] || @config.pluginconf["libvirt.url"] || "qemu:///system"
 
                 conn = ::Libvirt::open(url)
 

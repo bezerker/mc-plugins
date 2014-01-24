@@ -9,6 +9,14 @@ metadata    :name        => "libvirt",
 action "hvinfo", :description => "Hypervisor Information" do
     display :always
 
+    input :libvirt_url,
+          :prompt      => "Override hypervisor URI?",
+          :description => "Libvirt URL",
+          :type        => :string,
+          :validation  => '^\w+:\/\/[\S]+$',
+          :maxlength   => 255,
+          :optional    => true
+
     input :facts,
           :prompt      => "Include Facts?",
           :description => "Also include Facter in the reply",
@@ -135,6 +143,14 @@ end
 action "domaininfo", :description => "Domain Information" do
     display :ok
 
+    input :libvirt_url,
+          :prompt      => "Override hypervisor URI?",
+          :description => "Libvirt URL",
+          :type        => :string,
+          :validation  => '^\w+:\/\/[\S]+$',
+          :maxlength   => 255,
+          :optional    => true
+
     input :domain,
         :prompt      => "Domain Name",
         :description => "Name of a defined domain",
@@ -199,6 +215,14 @@ end
 action "domainxml", :description => "Retrieve the full libvirt XML description for a domain" do
     display :ok
 
+    input :libvirt_url,
+          :prompt      => "Override hypervisor URI?",
+          :description => "Libvirt URL",
+          :type        => :string,
+          :validation  => '^\w+:\/\/[\S]+$',
+          :maxlength   => 255,
+          :optional    => true
+
     input :domain,
         :prompt      => "Domain Name",
         :description => "Name of a defined domain",
@@ -214,6 +238,14 @@ end
 
 action "definedomain", :description => "Defines a domain from a XML file describing it" do
     display :always
+
+    input :libvirt_url,
+          :prompt      => "Override hypervisor URI?",
+          :description => "Libvirt URL",
+          :type        => :string,
+          :validation  => '^\w+:\/\/[\S]+$',
+          :maxlength   => 255,
+          :optional    => true
 
     input :domain,
         :prompt      => "Domain Name",
@@ -255,6 +287,15 @@ action "definedomain", :description => "Defines a domain from a XML file describ
 end
 
 action "undefinedomain", :description => "Undefines a domain" do
+
+    input :libvirt_url,
+          :prompt      => "Override hypervisor URI?",
+          :description => "Libvirt URL",
+          :type        => :string,
+          :validation  => '^\w+:\/\/[\S]+$',
+          :maxlength   => 255,
+          :optional    => true
+
     input :domain,
         :prompt      => "Domain Name",
         :description => "Name of a defined domain",
@@ -277,6 +318,14 @@ end
 [:destroy, :shutdown, :suspend, :resume, :create, :start, :reboot].each do |act|
     action act.to_s, :description => "#{act.to_s.capitalize} a domain" do
         display :ok
+
+        input :libvirt_url,
+            :prompt      => "Override hypervisor URI?",
+            :description => "Libvirt URL",
+            :type        => :string,
+            :validation  => '^\w+:\/\/[\S]+$',
+            :maxlength   => 255,
+            :optional    => true
 
         input :domain,
             :prompt      => "Domain Name",

@@ -12,8 +12,8 @@ class MCollective::Application::Virt<MCollective::Application
 
     option :connect,
         :description => "hypervisor connection URI",
-        :arguments   => ["--connect"],
-        :type        => :string,
+        :arguments   => ["--connect", "-c"],
+        :type        => String,
         :optional    => true
 
     def post_option_parser(configuration)
@@ -22,8 +22,10 @@ class MCollective::Application::Virt<MCollective::Application
 
         if configuration[:domain] =~ /^\w+:\/\/[\S]+$/
             configuration[:connect] = configuration.delete(:domain)
+        else
+            configuration[:connect] = ARGV.shift if ARGV.size > 0
+            configuration.delete(:connect) if not configuration[:connect] =~ /^\w+:\/\/[\S]+$/
         end
-        puts configuration.inspect
     end
 
     def validate_configuration(configuration)
@@ -36,7 +38,7 @@ class MCollective::Application::Virt<MCollective::Application
 
     def base_args
        base = Hash.new
-       base[:libvirt_url] = configuration[:connect] if configuration[:connect] =~ /^\w:\/\/[\S]+$/
+       base[:libvirt_url] = configuration[:connect] if configuration[:connect] =~ /^\w+:\/\/[\S]+$/
        base
     end
 
@@ -69,9 +71,13 @@ class MCollective::Application::Virt<MCollective::Application
     end
 
     def info_command
+        puts "hai!"
+        puts configuration.inspect
+        puts base_args.inspect
         if configuration[:domain]
             printrpc virtclient.domaininfo(base_args.merge(:domain => configuration[:domain]))
         else
+            puts base_args
             printrpc virtclient.hvinfo(base_args)
         end
     end

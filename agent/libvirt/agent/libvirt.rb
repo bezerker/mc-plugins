@@ -14,7 +14,7 @@ module MCollective
                     end
 
                     [:type, :version, :uri, :max_vcpus].each do |i|
-                        reply[i] = conn.send(i)
+                        reply[i] = conn.send(i) rescue "not available"
                     end
 
                     # not implemented on all hypervisors
@@ -41,7 +41,7 @@ module MCollective
 
                     reply[:facts] = PluginManager["facts_plugin"].get_facts if request[:facts]
                 rescue Exception => e
-                    reply.fail! "Could not load hvm info: #{e}"
+                    reply.fail! "Could not load hvm info: #{e} #{e.backtrace.inspect}"
                 ensure
                     close(conn)
                 end
@@ -58,7 +58,11 @@ module MCollective
                     domain = conn.lookup_domain_by_name(request[:domain])
                     info = domain.info
 
-                    reply[:autostart] = domain.autostart?
+                    Log.error domain.inspect
+                    Log.error domain.methods.inspect
+                    Log.error info.inspect
+
+                    reply[:autostart] = domain.autostart? rescue "-1"
                     reply[:vcpus] = info.nr_virt_cpu
                     reply[:memory] = info.memory
                     reply[:max_memory] = info.max_mem
@@ -66,7 +70,7 @@ module MCollective
                     reply[:state] = info.state
                     reply[:state_description] = virtstates[info.state]
                     reply[:uuid] = domain.uuid
-                    reply[:persistent] = domain.persistent?
+                    reply[:persistent] = domain.persistent? rescue "-1"
 
                     # not on all versions of libvirt
                     begin
@@ -181,8 +185,10 @@ module MCollective
 
             private
             def connect
-                url = request['libvirt_url'] || @config.pluginconf["libvirt.url"] || "qemu:///system"
+                url = request[:libvirt_url] || @config.pluginconf["libvirt.url"] || "qemu:///system"
 
+                Log.debug(url)
+              
                 conn = ::Libvirt::open(url)
 
                 raise "Could not connect to hypervisor" if conn.closed?
